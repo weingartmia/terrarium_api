@@ -1,0 +1,7 @@
+arduino-iot-cloud
+arduino-iot-client
+matplotlib
+oauthlib
+requests
+requests_oauthlib
+pyyaml

@@ -1,120 +1,208 @@
+
+from tkinter import ttk, Button, Label,Frame, Listbox
 import tkinter as tk
-from tkinter import ttk, Button, Label
 import matplotlib
 import matplotlib.pyplot as plt
 import time
 import cloud 
+from collections import defaultdict
+import os
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg) 
 matplotlib.use('TkAgg')
 
 
-print(cloud.get_things_and_props)
+
+
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.state('normal')
+        self.maincolor= '#000000'
+        self.forecolor='#FFFFFF'
+        self.humidcolor='#4F4D53'
+        self.tempcolor='#AE88F5'
+        self.activecolor='#B1A8C2'
+        self.buttoncolor='#1D1C1D'
+        #self.fig =(plt.figure(figsize=(7,3), num='Terrarium data', facecolor='white'))
+        self.tabs =defaultdict(Listbox)
+        self.cans =defaultdict(FigureCanvasTkAgg)
+        
+        plt.style.use('dark_background')
+        self.style= ttk.Style()
+        self.style.theme_use('default')
+        self.style.configure('TNotebook', background=f'{self.maincolor}',foreground=f'{self.forecolor}')
+        self.style.configure('TNotebook.Tab', background=f'{self.maincolor}',foreground=f'{self.forecolor}')
+        self.style.map("TNotebook", background= [("selected", f'{self.maincolor}')],foreground=[("selected",f'{self.forecolor}')])
         self.tabsys = ttk.Notebook(self)
-        
-        self.configure(bg='#AED830')
+        self.butsys = Frame(self, width=10, background=f'{self.maincolor}',relief='flat')
+        self.configure(bg=f'{self.maincolor}')
         self.attributes('-topmost',True)
-        self.humidity =[
-
-        ]
-        self.temperature=[
+        self.humidity =defaultdict(list)
         
-        ]
-        self.time_local=[ 
-                        ]
+
+        self.temperature=defaultdict(list)
+        self.time_local=[]
         self.geometry("500x350")
-        self.fig =(plt.figure(figsize=(7,3), num='Terrarium data', facecolor='white'))
-        self.title("Terrarium data")
-        self.canvas = FigureCanvasTkAgg(self.fig, 
-                               master = self) 
         
-        #self.canvas.draw() 
-        self.canvas.get_tk_widget().pack( side="bottom", expand=True)
-        #self.canvas.get_tk_widget().configure(bg='#AED830')
-        #self.canvas.get_tk_widget().configure(height=0)
-    # placing the canvas on the Tkinter window 
+        self.title("Terrarium data")
 
-
-        self.titlabel = ttk.Label(
+        self.titlabel = Label(
             self,
             text="Humidity and temperature",
-            background='#AED830',
+            background=f'{self.buttoncolor}',
+            foreground=f'{self.forecolor}',
             font=('sans-serif',15),
             width= 64,borderwidth=0,
 
         )
-        self.tpcolor =Label(self, background='#83A324', width='2',relief= 'raised')
-        self.hmcolor= Label(self, background='#D5EC8F', width='2',relief= 'raised')
-        self.titlabel.configure(padding=0,)
-        self.button = Button(
-            self, 
-            text="Refresh data", font=(("sans-serif"),10),activebackground='#CCE581',bg='#88A631',relief="flat"
-               )
-
-        self.button['command'] = self.updat
-        self.titlabel.pack(side="top")
-        self.humlabel = Label(
-            self, 
-            text="Humidity", font=(("sans-serif"),10),bg='#AED830',width=7
-        )
+        self.tpcolor =Label(self.butsys, background=f'{self.tempcolor}', width=2,relief= 'raised')
         self.temlabel= Label(
 
-            self,
-            text="Temperature", font=(("sans-serif"),10),bg='#AED830', width=8
+            self.butsys,text="Temperature", font=(("sans-serif"),10),
+        bg=f'{self.maincolor}',foreground=f'{self.forecolor}', width=9
 
         )
-       
-        self.humlabel.pack(side='left')
-        self.hmcolor.pack(side='left')
-        self.temlabel.pack(side='left')
-        self.tpcolor.pack(side='left')
-        self.button.pack(side='right')
-        plt.grid(True)
-    #   plt.ylabel('Rate')
+        self.hmcolor= Label(self.butsys, background=f'{self.humidcolor}', width=2,relief= 'raised')
+        
+
+        self.humlabel = Label(
+            self.butsys, 
+             text="Humidity", foreground=f'{self.forecolor}',font=(("sans-serif"),10),bg=f'{self.maincolor}',width=7
+         )
+        self.button = Button( 
+            self.butsys, 
+            text="Refresh data", font=(("sans-serif"),10),activebackground=f'{self.activecolor}',bg=f'{self.maincolor}', foreground=f'{self.forecolor}',relief="sunken", command=self.updat
+               )
+        self.but2 = Button( 
+            self.butsys, 
+            text="Last values", font=(("sans-serif"),10),activebackground=f'{self.activecolor}',bg=f'{self.maincolor}',foreground=f'{self.forecolor}',relief="sunken", command=self.fbut2
+               )
+        self.but3 = Button( 
+            self.butsys, 
+            text="Older values", font=(("sans-serif"),10),activebackground=f'{self.activecolor}',bg=f'{self.maincolor}',foreground=f'{self.forecolor}',relief="sunken", command=self.fbut3
+               )
+
+
+
+        self.titlabel.pack()
+        
+
+        for cloud.thing in cloud.things:
+                
+                self.tabs[f'{cloud.thing.name}'] = Listbox(self.tabsys)
+                self.tabsys.add(self.tabs[f'{cloud.thing.name}'], text =f'{cloud.thing.name}')
+                
+    
+                
+        self.button.pack(side='left')
+        self.but2.pack(side='left')
+        self.but3.pack(side='left')
+        self.humlabel.pack(expand=True,side='left')
+        self.hmcolor.pack(expand=True,side='left')
+        self.temlabel.pack(expand=True,side='left')
+        self.tpcolor.pack(expand=True,side='left')
+        
+        self.butsys.pack(side='top')
+        
+        
+        
+        self.switch =False
         self.old = 0
         self.updat()
-        
     
+    def fbut2(self):
+        print(self.switch)
+        if self.switch== False:
+            self.switch=True
+        self.updat()
+    def fbut3(self):
+         print(self.switch)
+         if self.switch ==True:
+              self.switch=False
+         self.updat()
+         
     def new_data(self):
 
 
         self.after(2000, self.new_data)
         self.time = time.perf_counter()
-        if self.time - self.old >= 120:
+        if self.time - self.old >= 600:
             self.old= self.time
             self.updat()
 
     def updat (self):
-        #self.after(2000)
+       
         
         self.time_size = time.localtime()
-        print("fvdsz")
-        self.humidity.append(cloud.cloudhum())
-        self.temperature.append(cloud.cloudtep())
-        self.time_local.append(f'{self.time_size[3]}:{int(((self.time_size[4])/10)-(((self.time_size[4])%10)/10))}{(self.time_size[4])%10}')
+       
         
-        if len(self.temperature) >= 8 and self.time_local[len(self.time_local)-1] == self.time_local[len(self.time_local)-2]:
-            print(len(self.temperature))
-            self.temperature.pop(0)
-            self.humidity.pop(0) 
-            self.time_local.pop(0)
-        plt.axis((self.time_local[0],self.time_local[len(self.time_local)-1],0,100))
-        plt.plot(self.time_local,self.humidity,'#D5EC8F')
-        plt.plot(self.time_local,self.temperature,'#83A324')
-        #self.canvas.get_tk_widget().destroy()
-        #plt.plot().clear
-        self.after(100,self.new_data())
-        cloud.value= []
-        #self.canvas.get_tk_widget().destroy()
-        #self.canvas.get_tk_widget().pack( side="bottom", expand=True)
-        self.canvas.draw()
+        cloud.get_things_and_props()  
+        self.tabbing()   
+        self.new_data()
+    def tabbing(self):
+
+        self.num=0
+        self.time_local.append(f'{self.time_size[3]}:{int(((self.time_size[4])-((self.time_size[4])%10))/10)}{(self.time_size[4])%10}')
         
         
+        for cloud.thing in cloud.things:
+                print(cloud.value)
+
+                self.fig, self.plots = plt.subplots()
+                self.tabsys.forget(self.tabs[f'{cloud.thing.name}'])
+                self.x = 0
+                self.val = cloud.value[f'{cloud.thing.name}'][self.x]
+
+                self.humidity[f'{cloud.thing.name}'].append(self.val)
+                self.x = self.x + 1
+
+                self.val = cloud.value[f'{cloud.thing.name}'][self.x]
+                self.temperature[f'{cloud.thing.name}'].append(self.val)
+                self.tabs[f'{cloud.thing.name}'] = Listbox(self.tabsys)
+                self.tabsys.add(self.tabs[f'{cloud.thing.name}'], text =f'{cloud.thing.name}')
+                
+                self.cans[f'{cloud.thing.name}'] = FigureCanvasTkAgg(self.fig, 
+                               master = self.tabs[f'{cloud.thing.name}'])
+
+                self.canv =self.cans[f'{cloud.thing.name}']
+            
+
+               
+                self.plots.grid(True)
+                if self.switch==True and len(self.time_local)>7:
+
+                        self.plots.plot(self.time_local[-8:],self.humidity[f'{cloud.thing.name}'][-8:],f'{self.humidcolor}')
+                        self.plots.plot(self.time_local[-8:],self.temperature[f'{cloud.thing.name}'][-8:],f'{self.tempcolor}')
+                        self.plots.set_ylim(ymin=0, ymax=100)
+                else:
+
+                    xmin=self.time_local[0]
+                    xmax=self.time_local[len(self.time_local)-1]
+                    self.plots.axis([xmin,xmax,0,100])
+                    self.plots.plot(self.time_local,self.humidity[f'{cloud.thing.name}'],f'{self.humidcolor}')
+                    self.plots.plot(self.time_local,self.temperature[f'{cloud.thing.name}'],f'{self.tempcolor}')
+
+                plt.tight_layout()
+                self.canv.get_tk_widget().pack(side='bottom')
+                
+                self.drw()
+        self.tabsys.pack(expand=True, side='bottom', fill='none')
+    def drw(self):
+        self.after(1, self.wtime())
+        self.canv.draw()
+   
+    def wtime(self):
+         print(self.cans[f'{cloud.thing.name}'])
+         self.after(5, self.tabpack())
+         
 
 
+    def tabpack (self):
+        
+        cloud.value[f'{cloud.thing.name}'] =[]
+        
+         
+           
 
 
 
